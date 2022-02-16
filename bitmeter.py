@@ -10,18 +10,16 @@ import sys
 import os
 import os.path
 import gettext
-import subprocess
 import datetime
 from datetime import datetime, timedelta
 import re
+import traceback
 
 TITLE = "Bitmeter OS Client"
 APP_NAME = "Bitmeter OS Client"
 APP_VENDOR = "AWK"
 APP_VERSION = "1.0"
-APP_USER_MODEL_ID = "Bitmeter OS Client.AWK"
-
-WARNING_THRESHOLD = 5
+APP_USER_MODEL_ID = "AWK.Bitmeter OS Client"
 
 _=gettext.gettext
 
@@ -51,7 +49,7 @@ class TaskBarIcon(wx.adv.TaskBarIcon):
         alerts = db.getAlerts()
         for id, alert in alerts.items():
             (usage, percent) = alert.getUsage()
-            icon = app.getIconFromPercent(percent, theme="light")
+            icon = app.getIconFromPercent(percent, theme=config.config.menu_theme)
             label = f"{percent:>3.0f}%   {usage.toString():>10}  - {alert.name}"
             self.createMenuItem(menu, label, icon=icon)
         
@@ -63,8 +61,9 @@ class TaskBarIcon(wx.adv.TaskBarIcon):
         # create menu items that open URLs to hosts called out in the config file
         menu.AppendSeparator()
         self.createMenuItemForHost(menu, "Local (admin)", "localhost")
-        for key, host in config.config['hosts'].items():
-            self.createMenuItemForHost(menu, f"Open {host['label']}", host['name'])
+        if len(config.config.hosts) > 0:
+            for key, host in config.config.hosts.items():
+                self.createMenuItemForHost(menu, f"Open {host.label}", host.name, host.port)
 
         menu.AppendSeparator()
         self.createMenuItem(menu, "Exit", func=app.onExit)
@@ -133,12 +132,12 @@ class App(wx.App):
         """ Update all alerts """    
         db.getAlerts()
         (alert, percent, usage) = db.getHighestAlertPercent()
-        icon = app.getIconFromPercent(percent, theme="dark")
+        icon = app.getIconFromPercent(percent, theme=config.config.taskbar_theme)
         label = f"{percent:>3.0f}%   {usage.toString():>10}  - {alert.name}"
         app.taskbarIcon.SetIcon(icon, label)
         delta = datetime.now() - timedelta(days=1)
         ts = int(delta.timestamp())
-        if percent >= WARNING_THRESHOLD and alert.lastNotified < ts:
+        if percent >= config.config.warning_threshold_percent and alert.lastNotified < ts:
             self.notify("Usage Warning", label, 0)
             ts = int(datetime.now().timestamp())
             alert.lastNotified = ts
@@ -161,6 +160,7 @@ class App(wx.App):
         #self.taskbarIcon.ShowBalloon(title, msg, duration)
         notify = wx.adv.NotificationMessage(title, msg,
             parent=None, flags=wx.ICON_INFORMATION)
+        notify.UseTaskBarIcon(self.taskbarIcon)
         if sys.platform == 'win32':
             startPath = os.path.expandvars("%AppData%\Microsoft\Windows\Start Menu\Programs")
             shortcutPath = startPath + "\BitMeter OS Client\BitMeter OS Client.lnk"
@@ -168,13 +168,15 @@ class App(wx.App):
         notify.Show(timeout=duration)
 
 if __name__ == '__main__':
-    app = App(redirect=False)
-    #bmclient = bmclient()
-    #bmclient.printSummary()
-    #bmclient.getBillingPeriodUsage()
-    config.db = Database()
-    db = config.db
-    wx.App.SetAppName(app, APP_NAME)
-    wx.App.SetVendorName(app, APP_VENDOR)
-    #app.notify("Testing", "This is a message")
-    app.MainLoop()
+    try:
+        app = App(redirect=False)
+        #bmclient = bmclient()
+        #bmclient.printSummary()
+        #bmclient.getBillingPeriodUsage()
+        config.db = Database()
+        db = config.db
+        wx.App.SetAppName(app, APP_NAME)
+        wx.App.SetVendorName(app, APP_VENDOR)
+        app.MainLoop()
+    except Exception:
+        traceback.print_exc()

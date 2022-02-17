@@ -4,9 +4,11 @@ import dataclasses
 from dataclasses import dataclass, field
 import typing
 import yaml
+import os
 import os.path
 
-CONFIG_FILE = "%APPDATA%/BitMeter OS Client/config.yaml"
+CONFIG_DIR = "%APPDATA%/BitMeter OS Client"
+CONFIG_FILE = "config.yaml"
 
 # global variables
 app = {}
@@ -33,7 +35,7 @@ class Config():
                 self.hosts[k] = Host(**v)
         pass
 
-configPath = os.path.expandvars(CONFIG_FILE)
+configPath = os.path.join(os.path.expandvars(CONFIG_DIR), CONFIG_FILE)
 config = Config()
 success = False
 if os.path.exists(configPath):
@@ -46,6 +48,7 @@ if os.path.exists(configPath):
         success = False
 else:
     # write a default config file if it doesn't exist
+    os.makedirs(os.path.expandvars(CONFIG_DIR), exist_ok=True)
     with open(configPath, "w") as f:
         dict = dataclasses.asdict(config)
         str = yaml.safe_dump(dict, default_flow_style=False, indent=4)

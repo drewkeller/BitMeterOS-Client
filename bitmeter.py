@@ -46,12 +46,15 @@ class TaskBarIcon(wx.adv.TaskBarIcon):
         menu = wx.Menu()
 
         # create menu items that show alert status (icon based on percentage and value in text)
-        alerts = db.getAlerts()
-        for id, alert in alerts.items():
-            (usage, percent) = alert.getUsage()
-            icon = app.getIconFromPercent(percent, theme=config.config.menu_theme)
-            label = f"{percent:>3.0f}%   {usage.toString():>10}  - {alert.name}"
-            self.createMenuItem(menu, label, icon=icon)
+        try:
+            alerts = db.getAlerts()
+            for id, alert in alerts.items():
+                (usage, percent) = alert.getUsage()
+                icon = app.getIconFromPercent(percent, theme=config.config.menu_theme)
+                label = f"{percent:>3.0f}%   {usage.toString():>10}  - {alert.name}"
+                self.createMenuItem(menu, label, icon=icon)
+        except Exception as ex:
+            logging.error(f"Error creating alert menu item: {ex}")
         
         # This gives different/inaccurate numbers from the alert usages 
         #menu.AppendSeparator()
@@ -59,11 +62,14 @@ class TaskBarIcon(wx.adv.TaskBarIcon):
         #self.createMenuItem(menu, f"{bmclient.getBillingPeriodUsage()} - This Billing")
         
         # create menu items that open URLs to hosts called out in the config file
-        menu.AppendSeparator()
-        self.createMenuItemForHost(menu, "Local (admin)", "localhost")
-        if len(config.config.hosts) > 0:
-            for key, host in config.config.hosts.items():
-                self.createMenuItemForHost(menu, f"Open {host.label}", host.name, host.port)
+        try:
+            menu.AppendSeparator()
+            self.createMenuItemForHost(menu, "Local (admin)", "localhost")
+            if len(config.config.hosts) > 0:
+                for key, host in config.config.hosts.items():
+                    self.createMenuItemForHost(menu, f"Open {host.label}", host.name, host.port)
+        except Exception as ex:
+            logging.error(f"Error creating host menu item: {ex}")
 
         menu.AppendSeparator()
         self.createMenuItem(menu, "Exit", func=app.onExit)

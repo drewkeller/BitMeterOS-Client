@@ -14,6 +14,7 @@ import datetime
 from datetime import datetime, timedelta
 import re
 import traceback
+import logging
 
 TITLE = "Bitmeter OS Client"
 APP_NAME = "Bitmeter OS Client"
@@ -175,7 +176,9 @@ class App(wx.App):
 
 if __name__ == '__main__':
     try:
-        app = App(redirect=False)
+        logging.basicConfig(filename="bitmeter.log", level=logging.DEBUG)
+        config.app = App(redirect=False)
+        app = config.app
         #bmclient = bmclient()
         #bmclient.printSummary()
         #bmclient.getBillingPeriodUsage()
@@ -185,4 +188,4 @@ if __name__ == '__main__':
         wx.App.SetVendorName(app, APP_VENDOR)
         app.MainLoop()
     except Exception:
-        traceback.print_exc()
+        logging.error(traceback.print_exc())

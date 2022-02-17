@@ -8,6 +8,8 @@ import sys
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import re
+import wx
+import logging
 
 from numpy import number
 
@@ -103,6 +105,7 @@ class Database():
         for row in q.fetchall():
             data = dict(row)
             usage = Bandwidth(data['vl'])
+        #logging.debug(f"{usage.bytes}, {data['vl']}")
         
         percent = usage.bytes / alert.amount * 100.0
         return (usage, percent)
@@ -111,7 +114,7 @@ class Bandwidth():
     factors = { 'K': 1024, 'M': 1024*1024, 'G': 1024*1024*1024, 'T': 1024*1024*1024*1024 }
 
     def __init__(self, numBytes):
-        self.bytes = numBytes
+        self.bytes = 0 if numBytes == None else numBytes 
 
     def fromString(str):
         matches = re.search("(?P<num>[0-0,.]+)\s*(?P<factor>[kMGT])B", str, re.IGNORECASE);

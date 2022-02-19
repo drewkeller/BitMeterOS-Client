@@ -7,6 +7,9 @@ import yaml
 import os
 import os.path
 import logging
+import gettext
+
+_ = gettext.gettext
 
 CONFIG_DIR = "%APPDATA%/BitMeter OS Client"
 CONFIG_FILE = "config.yaml"

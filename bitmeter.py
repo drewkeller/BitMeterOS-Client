@@ -23,7 +23,7 @@ APP_VENDOR = "AWK"
 APP_VERSION = "1.0"
 APP_USER_MODEL_ID = "AWK.BitmeterOSClient"
 
-_=gettext.gettext
+_ = gettext.gettext
 
 
 class TaskBarIcon(wx.adv.TaskBarIcon):
@@ -34,7 +34,6 @@ class TaskBarIcon(wx.adv.TaskBarIcon):
         self.iconName = ""
         self.label = ""
         self.SetIcon(ICON, TITLE)
-        #self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.onExit)
     
     def SetIcon(self, iconName, label):
         if iconName != self.iconName or label != self.label:

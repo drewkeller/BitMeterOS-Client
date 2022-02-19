@@ -4,6 +4,9 @@ import os
 import subprocess
 import re
 from datetime import datetime, timedelta
+import gettext
+
+_ = gettext.gettext
 
 class bmclient():
     def __init__(self):

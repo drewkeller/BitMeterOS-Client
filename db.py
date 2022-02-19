@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 
-import cfg
 import sqlite3
 import os
 import sys
-#import datetime
+from operator import attrgetter
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import re
-import wx
 import logging
 import gettext
 
@@ -87,16 +85,18 @@ class Database():
                 self.alerts[id] = alert
         return self.alerts
 
-    def getHighestAlertPercent(self):
-        highest = 0
-        amount = 0
-        highestAlert = {}
+    def getSortedAlerts(self, key='percent', ascending=False):
+        sortedAlerts = []
         for id, alert in self.alerts.items():
-            (usage, percent) = self.getAlertUsage(id)
-            if percent > highest:
-                highest = percent
-                highestAlert = alert
-        return (highestAlert, highest, usage)
+            self.getAlertUsage(id)
+            sortedAlerts.append(alert)
+        reverse = ascending == False
+        sortedAlerts.sort(key=attrgetter(key, 'interval'), reverse=reverse)
+        return sortedAlerts
+
+    def getHighestAlertPercent(self):
+        alerts = self.getSortedAlerts()
+        return (alerts[0], alerts[0].percent, alerts[0].usage)
 
     def getAlertUsage(self, alertId):
         alert = self.alerts[alertId]
@@ -108,16 +108,32 @@ class Database():
         for row in q.fetchall():
             data = dict(row)
             usage = Bandwidth(data['vl'])
+            alert.setUsage(usage)
         #logging.debug(f"{usage.bytes}, {data['vl']}")
         
-        percent = usage.bytes / alert.amount * 100.0
-        return (usage, percent)
+        return alert.usage
         
 class Bandwidth():
     factors = { 'K': 1024, 'M': 1024*1024, 'G': 1024*1024*1024, 'T': 1024*1024*1024*1024 }
 
     def __init__(self, numBytes):
-        self.bytes = 0 if numBytes == None else numBytes 
+        self.bytes = 0 if numBytes == None else numBytes
+
+    def __str__(self):
+        return self.toString()
+
+    def __repr__(self):
+        return f"<{self.toString()}>"
+
+    def __lt__(self, other):
+        if isinstance(other, Bandwidth):
+            return self.bytes < other.bytes
+        return False
+
+    def __eq__(self, other):
+        if isinstance(other, Bandwidth):
+            return self.bytes == other.bytes
+        return False
 
     def fromString(str):
         matches = re.search("(?P<num>[0-0,.]+)\s*(?P<factor>[kMGT])B", str, re.IGNORECASE);
@@ -149,21 +165,29 @@ class Alert():
         self.name = name
         self.interval = interval
         self.filter = filter
-        self.amount = amount
+        self.amount = Bandwidth(amount)
+        self.usage = 0
+        self.percent = 0
         self.lastNotified = 0
+
+    def __str__(self):
+        return f"[{self.id}: {self.percent}% ({self.usage}/{self.amount})"
+
+    def __repr__(self):
+        return f"<{self.id}: {self.percent}% ({self.usage}/{self.amount})>"
 
     def getTimeStamp(self):
         return self.interval.getTimeStamp()
 
-    def getUsage(self):
-        (usage, percent) = cfg.db.getAlertUsage(self.id)
-        return (usage, percent)
+    def setUsage(self, usage):
+        self.usage = usage
+        self.percent = self.usage.bytes / self.amount.bytes * 100.0
 
     def __eq__(self, other):
         if isinstance(other, Alert):
             return self.id == other.id \
                 and self.name == other.name \
-                and self.amount == other.amount \
+                and self.amount.bytes == other.amount.bytes \
                 and self.interval == other.interval \
                 and self.filter == other.filter
         return False
@@ -177,8 +201,7 @@ class AlertInterval():
         self.week = week
         self.hour = hour
     
-    def getTimeStamp(self):
-        now   = datetime.now()
+    def getTimeStamp(self, now=datetime.now()):
         delta = timedelta(0)
 
         year  = now.year  if self.year  == "*" else int(self.year)
@@ -209,12 +232,16 @@ class AlertInterval():
         timestamp = int(round(dt.timestamp()))
         return timestamp
 
+    def __lt__(self, other):
+        if isinstance(other, AlertInterval):
+            now=datetime.now()
+            return self.getTimeStamp(now) < other.getTimeStamp(now)
+        return False
+
     def __eq__(self, other):
         if isinstance(other, AlertInterval):
-            return self.id == other.id \
-                and self.year == other.year and self.month == other.month \
-                and self.day == other.day and self.week == other.week \
-                and self.hour == other.hour
+            now=datetime.now()
+            return self.getTimeStamp(now) == other.getTimeStamp(now)
         return False
 
 class Filter():

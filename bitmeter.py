@@ -46,11 +46,10 @@ class TaskBarIcon(wx.adv.TaskBarIcon):
 
         # create menu items that show alert status (icon based on percentage and value in text)
         try:
-            alerts = db.getAlerts()
-            for id, alert in alerts.items():
-                (usage, percent) = alert.getUsage()
-                icon = app.getIconFromPercent(percent, theme=config.menu_theme)
-                label = f"{percent:>3.0f}%   {usage.toString():>10}  - {alert.name}"
+            alerts = db.getSortedAlerts(key='interval', ascending=False)
+            for id, alert in enumerate(alerts):
+                icon = app.getIconFromPercent(alert.percent, theme=config.menu_theme)
+                label = f"{alert.percent:>3.0f}%   {alert.usage.toString():>10}  - {alert.name}"
                 self.createMenuItem(menu, label, icon=icon)
         except Exception as ex:
             logging.error(f"{_('Error creating alert menu item')}: {ex}")

@@ -129,6 +129,7 @@ class App(wx.App):
         return True
 
     def onExit(self, event):
+        self.taskbarIcon.RemoveIcon()
         self.taskbarIcon.Destroy()
         self.frame.Close()
         self.Destroy()

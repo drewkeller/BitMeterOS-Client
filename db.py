@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from dataclasses import dataclass
 import sqlite3
 import os
 import sys
@@ -50,7 +51,7 @@ class Database():
         self.intervals = {}
         for row in q.fetchall():
             data = dict(row)
-            interval = AlertInterval(id=data['id'], year=data['yr'], month=data['mn'], day=data['dy'], week=data['wk'], hour=data['hr'])
+            interval = AlertInterval(data['id'], year=data['yr'], month=data['mn'], day=data['dy'], week=data['wk'], hour=data['hr'])
             self.intervals[data['id']] = interval
         return self.intervals
 
@@ -80,7 +81,8 @@ class Database():
             interval = self.intervals[data['interval']]
             filter = self.filters[data['filter']]
             id = data['id']
-            alert = Alert(id=id, name=data['name'], interval=interval, filter=filter, amount=data['amount'])
+            amount = Bandwidth(data['amount'])
+            alert = Alert(id=id, name=data['name'], interval=interval, filter=filter, amount=amount)
             if not id in self.alerts or self.alerts[id] != alert:
                 self.alerts[id] = alert
         return self.alerts
@@ -165,47 +167,14 @@ class Bandwidth():
             units = "T"
         return f"{bytes:.2f} {units}B"
 
-class Alert():
-    def __init__(self, id, name, interval, filter, amount):
-        self.id = id
-        self.name = name
-        self.interval = interval
-        self.filter = filter
-        self.amount = Bandwidth(amount)
-        self.usage = 0
-        self.percent = 0
-        self.lastNotified = 0
-
-    def __str__(self):
-        return f"[{self.id}: {self.percent}% ({self.usage}/{self.amount})"
-
-    def __repr__(self):
-        return f"<{self.id}: {self.percent}% ({self.usage}/{self.amount})>"
-
-    def getTimeStamp(self):
-        return self.interval.getTimeStamp()
-
-    def setUsage(self, usage):
-        self.usage = usage
-        self.percent = self.usage.bytes / self.amount.bytes * 100.0
-
-    def __eq__(self, other):
-        if isinstance(other, Alert):
-            return self.id == other.id \
-                and self.name == other.name \
-                and self.amount.bytes == other.amount.bytes \
-                and self.interval == other.interval \
-                and self.filter == other.filter
-        return False
-
+@dataclass
 class AlertInterval():
-    def __init__(self, id, year, month, day, week, hour):
-        self.id = id
-        self.year = year
-        self.month = month
-        self.day = day
-        self.week = week
-        self.hour = hour
+    id: int
+    year: str = "*"
+    month: str = "*"
+    day: str = "*"
+    week: str = "*"
+    hour: str = "*"
     
     def getTimeStamp(self, now=datetime.now()):
         delta = timedelta(0)
@@ -279,23 +248,44 @@ class AlertInterval():
         except:
             return False
 
+@dataclass
+class Filter():
+    id: int
+    name: str
+    desc: str
+    expr: str = None
+    host: str = None
+
+@dataclass
+class Alert():
+    id: int
+    name: str
+    interval: AlertInterval
+    filter: Filter
+    amount: Bandwidth
+    usage: int = 0
+    percent: float = 0
+    lastNotified: int = 0
+
+    def __str__(self):
+        return f"[{self.id}: {self.percent}% ({self.usage}/{self.amount})"
+
+    def __repr__(self):
+        return f"<{self.id}: {self.percent}% ({self.usage}/{self.amount})>"
+
+    def getTimeStamp(self):
+        return self.interval.getTimeStamp()
+
+    def setUsage(self, usage):
+        self.usage = usage
+        self.percent = self.usage.bytes / self.amount.bytes * 100.0
+
     def __eq__(self, other):
-        if isinstance(other, AlertInterval):
+        if isinstance(other, Alert):
             return self.id == other.id \
-                and self.year == other.year and self.month == other.month \
-                and self.day == other.day and self.week == other.week \
-                and self.hour == other.hour
+                and self.name == other.name \
+                and self.amount.bytes == other.amount.bytes \
+                and self.interval == other.interval \
+                and self.filter == other.filter
         return False
 
-class Filter():
-    def __init__(self, id, desc, name, expr=None, host=None):
-        self.id = id
-        self.desc = desc
-        self.expr = expr
-        self.host = host
-    
-    def __eq__(self, other):
-        if isinstance(other, Filter):
-            return self.id == other.id and self.desc == other.desc \
-                and self.expr == other.expr and self.host == other.host
-        return False

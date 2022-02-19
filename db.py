@@ -85,19 +85,25 @@ class Database():
                 self.alerts[id] = alert
         return self.alerts
 
-    def getSortedAlerts(self, key='percent', ascending=False):
+    def getSortedAlerts(self, specs=[('percent', True)]):
+        """ specs=(attribue, reverse) """
         sortedAlerts = []
         for id, alert in self.alerts.items():
             self.getAlertUsage(id)
             sortedAlerts.append(alert)
-        reverse = ascending == False
-        sortedAlerts.sort(key=attrgetter(key, 'interval'), reverse=reverse)
+        self.multisort(sortedAlerts, specs)
         return sortedAlerts
 
-    def getHighestAlertPercent(self):
-        alerts = self.getSortedAlerts()
-        return (alerts[0], alerts[0].percent, alerts[0].usage)
+    def multisort(self, xs, specs):
+        """ multisort(list(student_objects), (('grade', True), ('age', False))) """
+        for key, reverse in reversed(specs):
+            xs.sort(key=attrgetter(key), reverse=reverse)
+        return xs
 
+    def getHighestAlertPercent(self):
+        alerts = self.getSortedAlerts([('percent', True)])
+        return (alerts[0], alerts[0].percent, alerts[0].usage)
+    
     def getAlertUsage(self, alertId):
         alert = self.alerts[alertId]
         timestamp = alert.getTimeStamp()
@@ -234,14 +240,51 @@ class AlertInterval():
 
     def __lt__(self, other):
         if isinstance(other, AlertInterval):
-            now=datetime.now()
-            return self.getTimeStamp(now) < other.getTimeStamp(now)
+            if self.isFieldLt(other, 'year'):
+                return True
+            if self.isFieldLt(other, 'month'):
+                return True
+            if self.isFieldLt(other, 'day'):
+                return True
+            if self.isFieldLt(other, 'week'):
+                return True
+            if self.isFieldLt(other, 'hour'):
+                return True
         return False
+
+    def isFieldLt(self, other, field):
+        thisField = getattr(self, field)
+        thatField = getattr(other, field)
+        # a "*" is always less than or equal to a number in the same position
+        if thisField == "*" and thatField != "*":
+            return True
+        if self.isInt(thisField) and self.isInt(thatField):
+            thisInt = int(thisField)
+            thatInt = int(thatField)
+            #  a positive value is always less than a rolling value (<0)
+            if thisInt >= 0 and thatInt < 0:
+                return True
+            # a rolling value (<0) is less than another rolling value if this < that
+            if thisInt < 0 and thatInt < 0 and thisInt < thatInt:
+                return True
+            # both numbers > 0, the smaller value will occur before the larger
+            if thisInt > 0 and thatInt > 0 and thisInt < thatInt:
+                return True
+        return False
+
+    def isInt(self, val):
+        try:
+            int(val)
+            return True
+        except:
+            return False
 
     def __eq__(self, other):
         if isinstance(other, AlertInterval):
-            now=datetime.now()
-            return self.getTimeStamp(now) == other.getTimeStamp(now)
+            return self.id == other.id \
+                and self.year == other.year and self.month == other.month \
+                and self.day == other.day and self.week == other.week \
+                and self.hour == other.hour
         return False
 
 class Filter():

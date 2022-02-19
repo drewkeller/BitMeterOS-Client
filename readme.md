@@ -11,7 +11,7 @@ The menu also provides a way to open the webpage for the localhost and any other
 
 ## Installation
 
-This client can be compiled into an executable or be run using an installed version of python.
+This application can be compiled into an executable or be run using an installed version of python.
 
 
 ### Creating an Executable
@@ -33,9 +33,15 @@ This client can be compiled into an executable or be run using an installed vers
 
 1. Install BitMeter OS version 0.8 or higher from https://codebox.net/pages/bitmeteros
 
+  > NOTE: The BitMeter installer might ask if you want to install WinPcap. If you are on Windows 10 or 11, I would recommend installing Npcap instead of WinPcap. WinPcap was last updated in 2013 and has some issues on Windows 10/11, such as not working after going into sleep mode. On the WinPcap web page, the author proposes using Npcap as a replacement.
+  > * Npcap: https://nmap.org/npcap/
+  > * When installing Npcap, select the option to enable WinPcap API compatibility.
+
 2. (Python installation only) Install Python. Python can be installed from one of the packages here: https://www.python.org/downloads/.
 
     > IMPORTANT: wxPython doesn't fully work on python 3.10, yet, so install a python version 3.9 or less.
+
+    - The installer will give you several options. The ones you want are 1) pip, 2) launcher. The others are optional.
 
 3. (Python installation only) Install the remaining dependencies. Open a command prompt and execute the following.
 
@@ -51,12 +57,13 @@ This client can be compiled into an executable or be run using an installed vers
 
 ## Configuration
 
-The configuration file is %APPDATA%\BitMeter OS Client\config.yaml. If it doesn't exist, it is created upon first run of the program, with default values. For the most part, the names are self-explanatory, but some are described below.
+The configuration file is *%APPDATA%\BitMeter OS Client\config.yaml*. If it doesn't exist, it is created upon first run of the program, with default values. For the most part, the names are self-explanatory, but some are described below.
 
 ### Hosts
 
 Menu items are created for each host named in the configuration file. Here's an example to show the formatting for items that will open http://myhostname1:2605 and http://myhostname2:1234.
-
+```
+hosts:
   0:
     label: This label appears in the menu
     name: myhostname1
@@ -64,3 +71,4 @@ Menu items are created for each host named in the configuration file. Here's an 
     label: Another menu item
     name: myhostname2
     port: 1234
+```

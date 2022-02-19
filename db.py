@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import config
+import cfg
 import sqlite3
 import os
 import sys
@@ -10,8 +10,11 @@ from dateutil.relativedelta import relativedelta
 import re
 import wx
 import logging
+import gettext
 
 from numpy import number
+
+_=gettext.gettext
 
 class Database():
     def __init__(self):
@@ -38,7 +41,7 @@ class Database():
             dbPath = dbPath or "/var/lib/bitmeter/bitmeter.db"
         
         if not os.path.exists(dbPath):
-            print (_('Database file not found') + ': ' + dbPath)
+            logging.error(_('Database file not found') + ': ' + dbPath)
             sys.exit(1)
 
         return dbPath
@@ -153,7 +156,7 @@ class Alert():
         return self.interval.getTimeStamp()
 
     def getUsage(self):
-        (usage, percent) = config.db.getAlertUsage(self.id)
+        (usage, percent) = cfg.db.getAlertUsage(self.id)
         return (usage, percent)
 
     def __eq__(self, other):

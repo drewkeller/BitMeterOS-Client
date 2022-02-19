@@ -1,4 +1,5 @@
-import config
+import cfg
+import sys
 import os
 import subprocess
 import re
@@ -51,7 +52,7 @@ class bmclient():
 
     def getBillingPeriodUsage(self):
         now = datetime.now()
-        billingDay = config.config['billing_day_of_month']
+        billingDay = cfg.config['billing_day_of_month']
         if now.day == billingDay:
             dt = datetime(now.year, now.month, now.day)
         elif now.day > billingDay:

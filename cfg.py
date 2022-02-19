@@ -6,6 +6,7 @@ import typing
 import yaml
 import os
 import os.path
+import logging
 
 CONFIG_DIR = "%APPDATA%/BitMeter OS Client"
 CONFIG_FILE = "config.yaml"
@@ -13,6 +14,8 @@ CONFIG_FILE = "config.yaml"
 # global variables
 app = {}
 db = {}
+confg = {}    
+
 
 @dataclass
 class Host():
@@ -46,6 +49,7 @@ if os.path.exists(configPath):
             success = True
     except:
         success = False
+        logging.error(_('Failed to read configuration file.'))
 else:
     # write a default config file if it doesn't exist
     os.makedirs(os.path.expandvars(CONFIG_DIR), exist_ok=True)

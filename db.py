@@ -90,8 +90,9 @@ class Database():
     def getSortedAlerts(self, specs=[('percent', True)]):
         """ specs=(attribue, reverse) """
         sortedAlerts = []
+        now = datetime.now()
         for id, alert in self.alerts.items():
-            self.getAlertUsage(id)
+            self.getAlertUsage(id, now)
             sortedAlerts.append(alert)
         self.multisort(sortedAlerts, specs)
         return sortedAlerts
@@ -106,9 +107,9 @@ class Database():
         alerts = self.getSortedAlerts([('percent', True)])
         return (alerts[0], alerts[0].percent, alerts[0].usage)
     
-    def getAlertUsage(self, alertId):
+    def getAlertUsage(self, alertId, now):
         alert = self.alerts[alertId]
-        timestamp = alert.getTimeStamp()
+        timestamp = alert.getTimeStamp(now)
 
         query = f"SELECT ts, dr, SUM(vl) as vl FROM data WHERE fl={alert.filter.id} and ts>={timestamp};"
         q = self.conn.cursor()
@@ -176,7 +177,8 @@ class AlertInterval():
     week: str = "*"
     hour: str = "*"
     
-    def getTimeStamp(self, now=datetime.now()):
+    def getTimeStamp(self, now=None):
+        now = datetime.now() if now == None else now
         delta = timedelta(0)
 
         year  = now.year  if self.year  == "*" else int(self.year)
@@ -273,8 +275,8 @@ class Alert():
     def __repr__(self):
         return f"<{self.id}: {self.percent}% ({self.usage}/{self.amount})>"
 
-    def getTimeStamp(self):
-        return self.interval.getTimeStamp()
+    def getTimeStamp(self, now):
+        return self.interval.getTimeStamp(now)
 
     def setUsage(self, usage):
         self.usage = usage

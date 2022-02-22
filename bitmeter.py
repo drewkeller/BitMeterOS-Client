@@ -151,7 +151,8 @@ class App(wx.App):
 
     def getIconFromPercent(self, percent, theme):
         # round to nearest 10 and pad to 3 digits
-        padded = f"{int(round(percent, -1)):0>3}"
+        nearest10 = int(round(percent, -1)) if percent <= 100 else 100
+        padded = f"{nearest10:0>3}"
         icon = f"status-{padded}"
         icon = f"icons{os.sep}{theme}{os.sep}{icon}.ico"
         return icon
